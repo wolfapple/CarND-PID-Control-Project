@@ -34,8 +34,14 @@ int main()
 
   PID pid;
   // TODO: Initialize the pid variable.
+  std::vector<double> p = {0.0, 0.0, 0.0};
+  std::vector<double> dp = {1.0, 1.0, 1.0};
+  pid.Init(p[0], p[1], p[2]);
+  double best_err = std::numeric_limits<double>::max();
+  int idx = 0;
+  bool rollback = false;
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid, &p, &dp, &best_err, &idx, &rollback](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -57,15 +63,62 @@ int main()
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
+          pid.UpdateError(cte);
+          steer_value = pid.SteerValue();
+
+          if (std::accumulate(dp.begin(), dp.end(), 0.0) > 0.2 || idx > 0) {
+            double err = pid.TotalError();
+            if (err > 0) {
+              p[idx] += dp[idx];
+              pid.Init(p[0], p[1], p[2]);
+              
+              if (p[0] == 0.0 && p[1] == 0.0 && p[2] == 0.0) {
+                best_err = err;
+              } else {
+                if (err < best_err) {
+                  best_err = err;
+                  if (idx == 0) {
+                    dp[2] *= 1.1;
+                  } else {
+                    dp[idx-1] *= 1.1;
+                  }
+                } else {
+                  if (rollback) {
+                    if (idx == 0) {
+                      p[2] += dp[2];
+                      dp[2] *= 0.9;
+                    } else {
+                      p[idx-1] += dp[idx-1];
+                      dp[idx-1] *= 0.9;
+                    }
+                    rollback = false;
+                  } else {
+                    if (idx == 0) {
+                      p[2] -= 2 * dp[2];
+                    } else {
+                      p[idx-1] -= 2 * dp[idx-1];
+                    }
+                    rollback = true;
+                  }
+                }
+                if (!rollback) {
+                  idx = (idx + 1) % 3;
+                }
+              }
+              std::cout << p[0] << ' ' << p[1] << ' ' << p[2] << std::endl;
+              pid.Restart(ws);
+              return;
+            }
+          }
           
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          // std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = 0.3;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          // std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {

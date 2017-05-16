@@ -1,3 +1,5 @@
+#include <uWS/uWS.h>
+
 #ifndef PID_H
 #define PID_H
 
@@ -16,6 +18,13 @@ public:
   double Kp;
   double Ki;
   double Kd;
+
+  double Dp;
+  double Di;
+  double Dd;
+
+  int step;
+  double total_err;
 
   /*
   * Constructor
@@ -41,6 +50,10 @@ public:
   * Calculate the total PID error.
   */
   double TotalError();
+
+  double SteerValue();
+
+  void Restart(uWS::WebSocket<uWS::SERVER> ws);
 };
 
 #endif /* PID_H */
