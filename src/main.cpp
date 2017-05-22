@@ -69,45 +69,33 @@ int main()
           if (std::accumulate(dp.begin(), dp.end(), 0.0) > 0.2 || idx > 0) {
             double err = pid.TotalError();
             if (err > 0) {
-              p[idx] += dp[idx];
-              pid.Init(p[0], p[1], p[2]);
-              
               if (p[0] == 0.0 && p[1] == 0.0 && p[2] == 0.0) {
                 best_err = err;
+                p[0] += dp[0];
+                pid.Init(p[0], p[1], p[2]);
               } else {
                 if (err < best_err) {
                   best_err = err;
-                  if (idx == 0) {
-                    dp[2] *= 1.1;
-                  } else {
-                    dp[idx-1] *= 1.1;
-                  }
+                  dp[idx] *= 1.1;
+                  rollback = false;
                 } else {
                   if (rollback) {
-                    if (idx == 0) {
-                      p[2] += dp[2];
-                      dp[2] *= 0.9;
-                    } else {
-                      p[idx-1] += dp[idx-1];
-                      dp[idx-1] *= 0.9;
-                    }
+                    p[idx] += dp[idx];
+                    dp[idx] *= 0.9;
                     rollback = false;
                   } else {
-                    if (idx == 0) {
-                      p[2] -= 2 * dp[2];
-                    } else {
-                      p[idx-1] -= 2 * dp[idx-1];
-                    }
+                    p[idx] -= 2 * dp[idx];                    
                     rollback = true;
                   }
                 }
                 if (!rollback) {
                   idx = (idx + 1) % 3;
-                }
+                  p[idx] += dp[idx];
+                }                
+                pid.Init(p[0], p[1], p[2]);
               }
               std::cout << p[0] << ' ' << p[1] << ' ' << p[2] << std::endl;
               pid.Restart(ws);
-              return;
             }
           }
           
