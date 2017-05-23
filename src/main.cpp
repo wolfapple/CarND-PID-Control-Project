@@ -34,8 +34,8 @@ int main()
 
   PID pid;
   // TODO: Initialize the pid variable.
-  std::vector<double> p = {0.0, 0.0, 0.0};
-  std::vector<double> dp = {1.0, 1.0, 1.0};
+  std::vector<double> p = {1.22648, 0, 10.6347};
+  std::vector<double> dp = {0.0336535, 0.0225284, 0.152349};
   pid.Init(p[0], p[1], p[2]);
   double best_err = std::numeric_limits<double>::max();
   int idx = 0;
@@ -74,6 +74,9 @@ int main()
                 p[0] += dp[0];
                 pid.Init(p[0], p[1], p[2]);
               } else {
+                bool t = err < best_err;
+                std::cout << idx << " " << "[" << p[0] << ", " << p[1] << ", " << p[2] << "]" << " ";
+                std::cout << "[" << dp[0] << ", " << dp[1] << ", " << dp[2] << "]" << " " << t <<std::endl;
                 if (err < best_err) {
                   best_err = err;
                   dp[idx] *= 1.1;
@@ -84,17 +87,16 @@ int main()
                     dp[idx] *= 0.9;
                     rollback = false;
                   } else {
-                    p[idx] -= 2 * dp[idx];                    
+                    p[idx] -= 2 * dp[idx];
                     rollback = true;
                   }
                 }
                 if (!rollback) {
                   idx = (idx + 1) % 3;
                   p[idx] += dp[idx];
-                }                
+                }
                 pid.Init(p[0], p[1], p[2]);
               }
-              std::cout << p[0] << ' ' << p[1] << ' ' << p[2] << std::endl;
               pid.Restart(ws);
             }
           }

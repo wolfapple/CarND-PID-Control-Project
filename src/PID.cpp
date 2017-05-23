@@ -1,4 +1,5 @@
 #include "PID.h"
+#include <math.h>
 
 /*
 * TODO: Complete the PID class.
@@ -24,21 +25,28 @@ void PID::UpdateError(double cte) {
     d_error = cte - p_error;
     p_error = cte;
     i_error += cte;
-    total_err += cte*cte;    
+    if (step > 200) total_err += cte*cte;
+  } else {
+    p_error = cte;
   }
   step += 1;
 }
 
 double PID::TotalError() {
-  if (step == 500) {
-    return total_err / step;
+  if (step > 4000) {
+    return total_err / 3800;
+  } else if (step > 200 && fabs(p_error) > 5.0) {
+    return total_err / (step - 200);
   } else {
     return -1;
   }
 }
 
 double PID::SteerValue() {
-  return -Kp * p_error - Kd * d_error - Ki * i_error;
+  double steer = -Kp * p_error - Kd * d_error - Ki * i_error;
+  steer = steer < -1 ? -1 : steer;
+  steer = steer > 1 ? 1 : steer;
+  return steer;
 }
 
 void PID::Restart(uWS::WebSocket<uWS::SERVER> ws) {
