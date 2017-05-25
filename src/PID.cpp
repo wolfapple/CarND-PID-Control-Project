@@ -33,8 +33,8 @@ void PID::UpdateError(double cte) {
 }
 
 double PID::TotalError() {
-  if (step > 4000) {
-    return total_err / 3800;
+  if (step > 5000) {
+    return total_err / 4800;
   } else if (step > 200 && fabs(p_error) > 5.0) {
     return total_err / (step - 200);
   } else {

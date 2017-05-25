@@ -34,8 +34,8 @@ int main()
 
   PID pid;
   // TODO: Initialize the pid variable.
-  std::vector<double> p = {1.22648, 0, 10.6347};
-  std::vector<double> dp = {0.0336535, 0.0225284, 0.152349};
+  std::vector<double> p = {1.70634, 0, 14.0006};
+  std::vector<double> dp = {0.836765, 0.487675, 2.12273};
   pid.Init(p[0], p[1], p[2]);
   double best_err = std::numeric_limits<double>::max();
   int idx = 0;
@@ -79,12 +79,12 @@ int main()
                 std::cout << "[" << dp[0] << ", " << dp[1] << ", " << dp[2] << "]" << " " << t <<std::endl;
                 if (err < best_err) {
                   best_err = err;
-                  dp[idx] *= 1.1;
+                  dp[idx] *= rollback ? 1.05 : 1.1;
                   rollback = false;
                 } else {
                   if (rollback) {
                     p[idx] += dp[idx];
-                    dp[idx] *= 0.9;
+                    dp[idx] *= 0.95;
                     rollback = false;
                   } else {
                     p[idx] -= 2 * dp[idx];
