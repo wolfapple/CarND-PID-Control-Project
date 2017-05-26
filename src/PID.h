@@ -17,14 +17,15 @@ public:
   */ 
   double Kp;
   double Ki;
-  double Kd;
+  double Kd;  
 
-  double Dp;
-  double Di;
-  double Dd;
-
+  std::vector<double> p;  
+  std::vector<double> dp;
   int step;
   double total_err;
+  double best_err;
+  int idx;
+  bool rollback;
 
   /*
   * Constructor
@@ -54,6 +55,8 @@ public:
   double SteerValue();
 
   void Restart(uWS::WebSocket<uWS::SERVER> ws);
+
+  void Twiddle(uWS::WebSocket<uWS::SERVER> ws);
 };
 
 #endif /* PID_H */

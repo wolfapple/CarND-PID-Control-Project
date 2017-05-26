@@ -33,15 +33,10 @@ int main()
   uWS::Hub h;
 
   PID pid;
-  // TODO: Initialize the pid variable.
-  std::vector<double> p = {1.70634, 0, 14.0006};
-  std::vector<double> dp = {0.836765, 0.487675, 2.12273};
-  pid.Init(p[0], p[1], p[2]);
-  double best_err = std::numeric_limits<double>::max();
-  int idx = 0;
-  bool rollback = false;
+  // TODO: Initialize the pid variable.  
+  pid.Init(0.0568875, 0, 6.7078);  
 
-  h.onMessage([&pid, &p, &dp, &best_err, &idx, &rollback](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -65,41 +60,7 @@ int main()
           */
           pid.UpdateError(cte);
           steer_value = pid.SteerValue();
-
-          if (std::accumulate(dp.begin(), dp.end(), 0.0) > 0.2 || idx > 0) {
-            double err = pid.TotalError();
-            if (err > 0) {
-              if (p[0] == 0.0 && p[1] == 0.0 && p[2] == 0.0) {
-                best_err = err;
-                p[0] += dp[0];
-                pid.Init(p[0], p[1], p[2]);
-              } else {
-                bool t = err < best_err;
-                std::cout << idx << " " << "[" << p[0] << ", " << p[1] << ", " << p[2] << "]" << " ";
-                std::cout << "[" << dp[0] << ", " << dp[1] << ", " << dp[2] << "]" << " " << t <<std::endl;
-                if (err < best_err) {
-                  best_err = err;
-                  dp[idx] *= rollback ? 1.05 : 1.1;
-                  rollback = false;
-                } else {
-                  if (rollback) {
-                    p[idx] += dp[idx];
-                    dp[idx] *= 0.95;
-                    rollback = false;
-                  } else {
-                    p[idx] -= 2 * dp[idx];
-                    rollback = true;
-                  }
-                }
-                if (!rollback) {
-                  idx = (idx + 1) % 3;
-                  p[idx] += dp[idx];
-                }
-                pid.Init(p[0], p[1], p[2]);
-              }
-              pid.Restart(ws);
-            }
-          }
+          pid.Twiddle(ws);
           
           // DEBUG
           // std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
